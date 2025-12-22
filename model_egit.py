@@ -8,39 +8,32 @@ from sklearn.metrics import accuracy_score
 import joblib
 import os
 
-# Dosya adı
-dosya_adi = "column_2C_weka.arff"
+# DOSYA ADI (Artık CSV kullanıyoruz)
+dosya_adi = "column_2C.csv"
 
-def arff_oku_ve_turkcelestir(dosya_yolu):
-    data = []
-    veri_basladi = False
-    with open(dosya_yolu, 'r', encoding='utf-8') as f:
-        for satir in f:
-            satir = satir.strip()
-            if not satir: continue
-            if not veri_basladi:
-                if satir.lower().startswith("@data"):
-                    veri_basladi = True
-                continue
-            data.append(satir.split(','))
-
-    sutunlar = ['Pelvik_İnsidans', 'Pelvik_Eğim', 'Lumbar_Lordoz_Açısı', 
-                'Sakral_Eğim', 'Pelvik_Yarıçap', 'Spondilolistezis_Derecesi', 'Durum']
-    
-    df = pd.DataFrame(data, columns=sutunlar)
-    for col in sutunlar[:-1]:
-        df[col] = pd.to_numeric(df[col])
-    return df
-
-print("3 Farklı Model eğitiliyor ve karşılaştırılıyor...")
+print("Model eğitimi başlıyor...")
 
 if os.path.exists(dosya_adi):
-    df = arff_oku_ve_turkcelestir(dosya_adi)
+    # 1. CSV DOSYASINI OKU
+    df = pd.read_csv(dosya_adi)
+    
+    # 2. SÜTUN İSİMLERİNİ TÜRKÇELEŞTİR (Sırası standarttır)
+    df.columns = [
+        'Pelvik_İnsidans', 
+        'Pelvik_Eğim', 
+        'Lumbar_Lordoz_Açısı', 
+        'Sakral_Eğim', 
+        'Pelvik_Yarıçap', 
+        'Spondilolistezis_Derecesi', 
+        'Durum'
+    ]
+    
+    # 3. VERİYİ HAZIRLA
     X = df.drop('Durum', axis=1)
     y = df['Durum']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # --- SADECE 3 MODEL ---
+    # 4. MODELLERİ EĞİT (3 Tane)
     modeller = {
         "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
         "SVM (Destek Vektör)": SVC(probability=True),
@@ -49,7 +42,8 @@ if os.path.exists(dosya_adi):
 
     sonuclar = {}
     
-    # Hepsini tek tek eğitip skorunu ölçelim
+    print(f"Toplam {len(df)} kayıt üzerinde eğitim yapılıyor...")
+    
     for isim, model in modeller.items():
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
@@ -57,17 +51,15 @@ if os.path.exists(dosya_adi):
         sonuclar[isim] = basari
         print(f"👉 {isim} Başarısı: %{basari * 100:.2f}")
 
-    # En iyi modeli bul ve kaydet
+    # En iyi modeli seç ve kaydet
     en_iyi_model_ismi = max(sonuclar, key=sonuclar.get)
     en_iyi_model = modeller[en_iyi_model_ismi]
     
-    print(f"\n🏆 EN İYİ MODEL: {en_iyi_model_ismi}")
+    print(f"\n🏆 ŞAMPİYON MODEL: {en_iyi_model_ismi}")
     
-    # Dosyaları kaydet
     joblib.dump(en_iyi_model, 'fiziktedavi_model.pkl')
     joblib.dump(sonuclar, 'model_skorlari.pkl')
-    
-    print("💾 Dosyalar güncellendi! Şimdi arayüzü çalıştırabilirsin.")
+    print("💾 Model ve skorlar başarıyla kaydedildi!")
     
 else:
-    print("HATA: ARFF dosyası bulunamadı!")
+    print(f"HATA: '{dosya_adi}' dosyası klasörde bulunamadı! Lütfen ismini kontrol et.")

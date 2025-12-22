@@ -4,33 +4,8 @@ import pandas as pd
 import joblib
 import os
 
-# --- 1. AYARLAR VE FONKSİYONLAR ---
+# --- AYARLAR ---
 st.set_page_config(page_title="Fizik Tedavi KDS", page_icon="🏥", layout="wide")
-
-# ARFF okuma fonksiyonu
-def arff_oku_ve_turkcelestir(dosya_yolu):
-    data = []
-    veri_basladi = False
-    if not os.path.exists(dosya_yolu):
-        return None
-        
-    with open(dosya_yolu, 'r', encoding='utf-8') as f:
-        for satir in f:
-            satir = satir.strip()
-            if not satir: continue
-            if not veri_basladi:
-                if satir.lower().startswith("@data"):
-                    veri_basladi = True
-                continue
-            data.append(satir.split(','))
-
-    sutunlar = ['Pelvik_İnsidans', 'Pelvik_Eğim', 'Lumbar_Lordoz_Açısı', 
-                'Sakral_Eğim', 'Pelvik_Yarıçap', 'Spondilolistezis_Derecesi', 'Durum']
-    
-    df = pd.DataFrame(data, columns=sutunlar)
-    for col in sutunlar[:-1]:
-        df[col] = pd.to_numeric(df[col])
-    return df
 
 # Modelleri yükle
 try:
@@ -40,10 +15,7 @@ except:
     st.error("Model dosyaları bulunamadı! Lütfen önce 'model_egit.py' dosyasını çalıştırın.")
     st.stop()
 
-# --- 2. BAŞLIK VE SEKME YAPISI ---
 st.title("🏥 Ortopedik Anomali Tespit ve Analiz Sistemi")
-
-# Sekmeleri oluşturuyoruz
 tab1, tab2 = st.tabs(["🩺 Tahmin Sistemi", "📊 Veri Analizi"])
 
 # ==========================================
@@ -62,21 +34,20 @@ with tab1:
         p_yaricap = st.slider('Pelvik Yarıçap', 70.0, 164.0, 110.0)
         s_derece = st.slider('Spondilolistezis Derecesi', -11.0, 419.0, 10.0)
 
-        input_data = {
-            'Pelvik_İnsidans': p_insidans,
-            'Pelvik_Eğim': p_egim,
-            'Lumbar_Lordoz_Açısı': l_lordoz,
-            'Sakral_Eğim': s_egim,
-            'Pelvik_Yarıçap': p_yaricap,
-            'Spondilolistezis_Derecesi': s_derece
-        }
-        input_df = pd.DataFrame(input_data, index=[0])
+        input_df = pd.DataFrame({
+            'Pelvik_İnsidans': [p_insidans],
+            'Pelvik_Eğim': [p_egim],
+            'Lumbar_Lordoz_Açısı': [l_lordoz],
+            'Sakral_Eğim': [s_egim],
+            'Pelvik_Yarıçap': [p_yaricap],
+            'Spondilolistezis_Derecesi': [s_derece]
+        })
 
     with col_result:
         st.subheader("Analiz Sonucu")
         st.info("Girilen Değerler:")
-        # BURAYI DÜZELTTİM: Eski kod uyarı veriyordu, sadeleştirdik.
-        st.dataframe(input_df)
+        # BURADA GÜNCELLEME YAPILDI (Eski komut silindi)
+        st.dataframe(input_df, hide_index=True)
         
         if st.button("Hastalığı Tahmin Et", type="primary"):
             prediction = model.predict(input_df)
@@ -97,62 +68,61 @@ with tab1:
             probs_df = probs_df.rename(columns={'Abnormal': 'Anormal', 'Normal': 'Normal'})
             st.bar_chart(probs_df.T)
 
-    # Model Karşılaştırma Grafiği
     st.divider()
     st.subheader("📈 Algoritma Performans Karşılaştırması")
     skor_df = pd.DataFrame(list(skorlar.items()), columns=['Algoritma', 'Başarı Oranı'])
     skor_df = skor_df.set_index('Algoritma')
     st.bar_chart(skor_df)
-    st.caption("Bu proje kapsamında 3 farklı makine öğrenmesi algoritması test edilmiştir.")
+    st.caption("Bu grafik, veri seti üzerinde eğitilen 3 farklı algoritmanın başarı oranlarını kıyaslamaktadır.")
 
 # ==========================================
-# SEKME 2: VERİ ANALİZİ
+# SEKME 2: VERİ ANALİZİ (GÜNCELLENDİ)
 # ==========================================
 with tab2:
-    st.header("Veri Seti İstatistikleri ve Görselleştirme")
+    st.header("Veri Seti İstatistikleri")
     
-    # Veriyi tekrar oku
-    df = arff_oku_ve_turkcelestir("column_2C_weka.arff")
+    dosya_yolu = "column_2C.csv"
     
-    if df is not None:
-        # 1. Veri Önizleme
+    if os.path.exists(dosya_yolu):
+        df = pd.read_csv(dosya_yolu)
+        # Sütunları Türkçeleştir
+        df.columns = ['Pelvik_İnsidans', 'Pelvik_Eğim', 'Lumbar_Lordoz_Açısı', 
+                      'Sakral_Eğim', 'Pelvik_Yarıçap', 'Spondilolistezis_Derecesi', 'Durum']
+        
+        # 1. BÖLÜM
         st.subheader("1. Veri Setine Genel Bakış")
-        st.write(f"Veri setinde toplam **{df.shape[0]}** hasta kaydı ve **{df.shape[1]}** özellik bulunmaktadır.")
+        st.write(f"Toplam Kayıt: **{df.shape[0]}** | Özellik Sayısı: **{df.shape[1]}**")
         
-        # BURAYI DÜZELTTİM: Eski 'use_container_width' parametresini kaldırdım.
+        # GÜNCELLEME: use_container_width=True yerine width="stretch" VEYA parametreyi tamamen kaldırdım.
+        # En temiz çözüm parametreyi kaldırmaktır, Streamlit otomatik ayarlar.
         st.dataframe(df.head(10)) 
-        st.caption("İlk 10 satır gösterilmektedir.")
-
-        # 2. İstatistiksel Özet
-        st.subheader("2. İstatistiksel Özellikler")
-        st.write("Ortalama, standart sapma, min-max değerleri:")
-        st.write(df.describe())
-
-        # 3. Sınıf Dağılımı
-        st.subheader("3. Hasta Dağılımı (Normal vs Anormal)")
-        col_pie1, col_pie2 = st.columns([1, 2])
         
-        dagilim = df['Durum'].value_counts()
-        dagilim = dagilim.rename(index={'Abnormal': 'Anormal', 'Normal': 'Normal'})
+        st.caption("ℹ️ Tabloda veri setinin ilk 10 satırı örnek olarak gösterilmektedir.")
+
+        # 2. BÖLÜM
+        st.subheader("2. İstatistiksel Özellikler")
+        st.write(df.describe())
+        st.caption("ℹ️ **count:** Veri sayısı, **mean:** Ortalama, **std:** Standart sapma, **min-max:** En düşük ve en yüksek değerler.")
+
+        # 3. BÖLÜM
+        st.subheader("3. Hasta Dağılımı")
+        col_pie1, col_pie2 = st.columns([1, 2])
+        dagilim = df['Durum'].value_counts().rename(index={'Abnormal': 'Anormal'})
         
         with col_pie1:
             st.dataframe(dagilim)
         with col_pie2:
             st.bar_chart(dagilim)
-            st.caption("Veri setindeki Anormal ve Normal hasta sayıları.")
+        st.caption("ℹ️ Veri setindeki Anormal (Hasta) ve Normal (Sağlıklı) bireylerin sayısal dağılımı.")
 
-        # 4. Korelasyon Analizi
-        st.subheader("4. Değişkenler Arası İlişki Analizi")
-        st.info("İki özellik arasındaki ilişkiyi görmek için aşağıdan seçim yapın.")
-        
+        # 4. BÖLÜM
+        st.subheader("4. Değişken İlişkileri")
         ozellikler = df.columns[:-1].tolist()
-        
         c1, c2 = st.columns(2)
-        x_ekseni = c1.selectbox("X Ekseni", ozellikler, index=0)
-        y_ekseni = c2.selectbox("Y Ekseni", ozellikler, index=5)
-        
-        st.scatter_chart(df, x=x_ekseni, y=y_ekseni, color='Durum', size=20)
-        st.caption(f"{x_ekseni} ile {y_ekseni} arasındaki ilişki.")
+        x_val = c1.selectbox("X Ekseni", ozellikler, index=0)
+        y_val = c2.selectbox("Y Ekseni", ozellikler, index=5)
+        st.scatter_chart(df, x=x_val, y=y_val, color='Durum', size=20)
+        st.caption(f"ℹ️ Yukarıdaki grafik **{x_val}** ile **{y_val}** arasındaki ilişkiyi gösterir. Noktaların rengi hastalık durumunu belirtir.")
         
     else:
-        st.error("Veri dosyası (column_2C_weka.arff) bulunamadı! Lütfen dosyanın klasörde olduğundan emin olun.")
+        st.error(f"'{dosya_yolu}' dosyası bulunamadı! Lütfen CSV dosyasını klasöre atın.")
