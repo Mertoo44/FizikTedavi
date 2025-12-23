@@ -1,4 +1,3 @@
-# Dosya adı: model_egit.py
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -8,16 +7,13 @@ from sklearn.metrics import accuracy_score
 import joblib
 import os
 
-# DOSYA ADI (Artık CSV kullanıyoruz)
 dosya_adi = "column_2C.csv"
 
 print("Model eğitimi başlıyor...")
 
 if os.path.exists(dosya_adi):
-    # 1. CSV DOSYASINI OKU
     df = pd.read_csv(dosya_adi)
     
-    # 2. SÜTUN İSİMLERİNİ TÜRKÇELEŞTİR (Sırası standarttır)
     df.columns = [
         'Pelvik_İnsidans', 
         'Pelvik_Eğim', 
@@ -33,7 +29,7 @@ if os.path.exists(dosya_adi):
     y = df['Durum']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # 4. MODELLERİ EĞİT (3 Tane)
+    # 4. MODELLERİ EĞİT
     modeller = {
         "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
         "SVM (Destek Vektör)": SVC(probability=True),
@@ -51,7 +47,6 @@ if os.path.exists(dosya_adi):
         sonuclar[isim] = basari
         print(f"👉 {isim} Başarısı: %{basari * 100:.2f}")
 
-    # En iyi modeli seç ve kaydet
     en_iyi_model_ismi = max(sonuclar, key=sonuclar.get)
     en_iyi_model = modeller[en_iyi_model_ismi]
     

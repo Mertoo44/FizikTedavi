@@ -1,13 +1,10 @@
-# Dosya adı: app.py
 import streamlit as st
 import pandas as pd
 import joblib
 import os
 
-# --- AYARLAR ---
 st.set_page_config(page_title="Fizik Tedavi KDS", page_icon="🏥", layout="wide")
 
-# Modelleri yükle
 try:
     model = joblib.load('fiziktedavi_model.pkl')
     skorlar = joblib.load('model_skorlari.pkl')
@@ -46,7 +43,6 @@ with tab1:
     with col_result:
         st.subheader("Analiz Sonucu")
         st.info("Girilen Değerler:")
-        # BURADA GÜNCELLEME YAPILDI (Eski komut silindi)
         st.dataframe(input_df, hide_index=True)
         
         if st.button("Hastalığı Tahmin Et", type="primary"):
@@ -76,7 +72,7 @@ with tab1:
     st.caption("Bu grafik, veri seti üzerinde eğitilen 3 farklı algoritmanın başarı oranlarını kıyaslamaktadır.")
 
 # ==========================================
-# SEKME 2: VERİ ANALİZİ (GÜNCELLENDİ)
+# SEKME 2: VERİ ANALİZİ 
 # ==========================================
 with tab2:
     st.header("Veri Seti İstatistikleri")
@@ -85,7 +81,7 @@ with tab2:
     
     if os.path.exists(dosya_yolu):
         df = pd.read_csv(dosya_yolu)
-        # Sütunları Türkçeleştir
+        
         df.columns = ['Pelvik_İnsidans', 'Pelvik_Eğim', 'Lumbar_Lordoz_Açısı', 
                       'Sakral_Eğim', 'Pelvik_Yarıçap', 'Spondilolistezis_Derecesi', 'Durum']
         
@@ -93,8 +89,6 @@ with tab2:
         st.subheader("1. Veri Setine Genel Bakış")
         st.write(f"Toplam Kayıt: **{df.shape[0]}** | Özellik Sayısı: **{df.shape[1]}**")
         
-        # GÜNCELLEME: use_container_width=True yerine width="stretch" VEYA parametreyi tamamen kaldırdım.
-        # En temiz çözüm parametreyi kaldırmaktır, Streamlit otomatik ayarlar.
         st.dataframe(df.head(10)) 
         
         st.caption("ℹ️ Tabloda veri setinin ilk 10 satırı örnek olarak gösterilmektedir.")
