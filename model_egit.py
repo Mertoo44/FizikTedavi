@@ -24,12 +24,12 @@ if os.path.exists(dosya_adi):
         'Durum'
     ]
     
-    # 3. VERİYİ HAZIRLA
+    # VERİYİ HAZIRLA
     X = df.drop('Durum', axis=1)
     y = df['Durum']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # 4. MODELLERİ EĞİT
+    # MODELLERİ EĞİT
     modeller = {
         "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
         "SVM (Destek Vektör)": SVC(probability=True),
