@@ -1,4 +1,3 @@
-# Dosya adı: app.py
 import streamlit as st
 import pandas as pd
 import joblib
@@ -106,7 +105,7 @@ with tab1:
     st.caption("Bu grafik, eğitim sırasında farklı algoritmaların test verisi üzerindeki başarı oranlarını gösterir.")
 
 # ==========================================
-# SEKME 2: VERİ ANALİZİ VE CONFUSION MATRIX
+# SEKME 2: VERİ ANALİZİ, KORELASYON VE CONFUSION MATRIX
 # ==========================================
 with tab2:
     st.header("Veri Seti Analizi ve Model Performansı")
@@ -118,20 +117,24 @@ with tab2:
         df.columns = ['Pelvik_İnsidans', 'Pelvik_Eğim', 'Lumbar_Lordoz_Açısı', 
                       'Sakral_Eğim', 'Pelvik_Yarıçap', 'Spondilolistezis_Derecesi', 'Durum']
         
+        # 1. BÖLÜM
         st.subheader("1. Veri Setine Genel Bakış")
         st.write(f"Toplam Kayıt: **{df.shape[0]}** | Özellik Sayısı: **{df.shape[1]}**")
         st.dataframe(df.head(10)) 
 
+        # 2. BÖLÜM
         st.subheader("2. İstatistiksel Özellikler")
         st.write(df.describe())
 
+        # 3. BÖLÜM
         st.subheader("3. Hasta Dağılımı")
         col_pie1, col_pie2 = st.columns([1, 2])
         dagilim = df['Durum'].value_counts().rename(index={'Abnormal': 'Anormal'})
         with col_pie1: st.dataframe(dagilim)
         with col_pie2: st.bar_chart(dagilim)
 
-        st.subheader("4. Değişken İlişkileri")
+        # 4. BÖLÜM
+        st.subheader("4. Değişken İlişkileri (Scatter Plot)")
         ozellikler = df.columns[:-1].tolist()
         c1, c2 = st.columns(2)
         x_val = c1.selectbox("X Ekseni", ozellikler, index=0)
@@ -140,18 +143,50 @@ with tab2:
 
         st.divider()
 
-        st.subheader("5. Karmaşıklık Matrisi (Tüm Veri Seti)")
+        # ==========================================
+        # 5. BÖLÜM: KORELASYON MATRİSİ 
+        # ==========================================
+        st.subheader("5. Korelasyon Matrisi (İlişki Analizi)")
+        st.markdown("""
+        Bu matris, özelliklerin birbirleriyle ne kadar ilişkili olduğunu gösterir.
+        *   **+1'e yakın (Kırmızı):** Güçlü Pozitif İlişki (Biri artarsa diğeri de artar).
+        *   **-1'e yakın (Mavi):** Güçlü Negatif İlişki (Biri artarsa diğeri azalır).
+        """)
+
+        # Sadece sayısal sütunları seçiyoruz
+        numeric_df = df.select_dtypes(include=['float64', 'int64'])
+        corr_matrix = numeric_df.corr()
+
+        col_corr1, col_corr2 = st.columns([1, 1]) 
+        
+        with col_corr1:
+            fig_corr, ax_corr = plt.subplots(figsize=(6, 5))
+            sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5, ax=ax_corr)
+            st.pyplot(fig_corr)
+        
+        with col_corr2:
+            st.info("""
+            **💡 Analiz İpucu:**
+            Matrise dikkatli bakarsanız **Pelvik İnsidans** ile **Sakral Eğim** arasında çok yüksek bir ilişki (Kırmızı renk) görürsünüz.
+            
+            Bunun sebebi tıbbi olarak formülün şu olmasıdır:
+            `Pelvik İnsidans = Pelvik Eğim + Sakral Eğim`
+            """)
+
+        st.divider()
+
+        # 6. BÖLÜM: CONFUSION MATRIX
+        st.subheader("6. Karmaşıklık Matrisi (Performans Analizi)")
+        st.markdown("Modelin **Tüm Veri Seti** üzerindeki Doğru/Yanlış tahminleri:")
+        
         X_all = df.drop('Durum', axis=1)
         y_all = df['Durum']
         y_pred_all = model.predict(X_all)
         cm = confusion_matrix(y_all, y_pred_all, labels=model.classes_)
         
-        # --- GÜNCELLEME BURADA ---
-        # Grafiği küçültmek için sütun kullandık
-        col_cm1, col_cm2 = st.columns([1, 2]) # 1 birim grafik, 2 birim boşluk
+        col_cm1, col_cm2 = st.columns([1, 2])
         
         with col_cm1:
-            # figsize=(5, 4) yaparak fiziksel boyutunu küçülttük
             fig, ax = plt.subplots(figsize=(5, 4))
             sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=model.classes_, yticklabels=model.classes_, ax=ax)
             plt.ylabel('Gerçek Durum')
