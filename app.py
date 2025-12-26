@@ -1,3 +1,4 @@
+# Dosya adı: app.py
 import streamlit as st
 import pandas as pd
 import joblib
@@ -10,7 +11,7 @@ from PIL import Image
 # --- AYARLAR ---
 st.set_page_config(page_title="Fizik Tedavi KDS", page_icon="🏥", layout="wide")
 
-# RESİM YÜKLEME FONKSİYONU
+# RESİM YÜKLEME FONKSİYONU (Hata önleyici - Resim yoksa boş geçer)
 def resim_goster(dosya_adi, genislik=None, altyazi=None):
     if os.path.exists(dosya_adi):
         img = Image.open(dosya_adi)
@@ -32,6 +33,7 @@ except:
 # --- BAŞLIK KISMI ---
 col_logo, col_baslik = st.columns([1, 4])
 with col_logo:
+    # Varsa banner.jpg gösterir, yoksa boş geçer
     resim_goster("banner.jpg", genislik=150) 
 with col_baslik:
     st.title("🏥 Ortopedik Anomali Tespit Sistemi")
@@ -47,6 +49,7 @@ with tab1:
 
     with col_input:
         st.subheader("Hasta Verileri")
+        # Varsa anatomi.jpg gösterir, yoksa boş geçer
         resim_goster("anatomi.jpg", altyazi="Omurga Açıları Referans Görseli")
         
         st.info("Lütfen hastanın radyolojik ölçümlerini giriniz:")
@@ -75,27 +78,21 @@ with tab1:
             probability = model.predict_proba(input_df)
             durum = prediction[0]
             
-            res_col1, res_col2 = st.columns([2, 1])
+            # --- RESİMLER KALDIRILDI, SADECE SONUÇ VE GRAFİK VAR ---
             
-            with res_col1:
-                if durum == 'Normal':
-                    st.success(f"✅ SONUÇ: {durum}")
-                    st.write("Hastanın omurga yapısı **Sağlıklı** sınıfında değerlendirilmiştir.")
-                else:
-                    if durum == 'Abnormal': durum = 'ANORMAL (Riskli)'
-                    st.error(f"⚠️ SONUÇ: {durum}")
-                    st.write("Hastada **Disk Kayması veya Fıtık** riski tespit edilmiştir. Uzman hekim kontrolü önerilir.")
-                
-                st.write("**Yapay Zeka Güven Oranı:**")
-                probs_df = pd.DataFrame(probability, columns=model.classes_)
-                probs_df = probs_df.rename(columns={'Abnormal': 'Anormal', 'Normal': 'Normal'})
-                st.bar_chart(probs_df.T)
-
-            with res_col2:
-                if durum == 'Normal':
-                    resim_goster("saglikli.jpg", altyazi="Sağlıklı Omurga Örneği")
-                else:
-                    resim_goster("hasta.jpg", altyazi="Spondilolistezis (Kayma) Örneği")
+            if durum == 'Normal':
+                st.success(f"✅ SONUÇ: {durum}")
+                st.write("Hastanın omurga yapısı **Sağlıklı** sınıfında değerlendirilmiştir.")
+            else:
+                if durum == 'Abnormal': durum = 'ANORMAL (Riskli)'
+                st.error(f"⚠️ SONUÇ: {durum}")
+                st.write("Hastada **Disk Kayması veya Fıtık** riski tespit edilmiştir. Uzman hekim kontrolü önerilir.")
+            
+            st.write("---")
+            st.write("**Yapay Zeka Güven Oranı:**")
+            probs_df = pd.DataFrame(probability, columns=model.classes_)
+            probs_df = probs_df.rename(columns={'Abnormal': 'Anormal', 'Normal': 'Normal'})
+            st.bar_chart(probs_df.T)
 
     st.divider()
     st.subheader("📈 Algoritma Performans Karşılaştırması")
@@ -143,17 +140,14 @@ with tab2:
 
         st.divider()
 
-        # ==========================================
         # 5. BÖLÜM: KORELASYON MATRİSİ 
-        # ==========================================
         st.subheader("5. Korelasyon Matrisi (İlişki Analizi)")
         st.markdown("""
         Bu matris, özelliklerin birbirleriyle ne kadar ilişkili olduğunu gösterir.
-        *   **+1'e yakın (Kırmızı):** Güçlü Pozitif İlişki (Biri artarsa diğeri de artar).
-        *   **-1'e yakın (Mavi):** Güçlü Negatif İlişki (Biri artarsa diğeri azalır).
+        *   **+1'e yakın (Kırmızı):** Güçlü Pozitif İlişki.
+        *   **-1'e yakın (Mavi):** Güçlü Negatif İlişki.
         """)
 
-        # Sadece sayısal sütunları seçiyoruz
         numeric_df = df.select_dtypes(include=['float64', 'int64'])
         corr_matrix = numeric_df.corr()
 
