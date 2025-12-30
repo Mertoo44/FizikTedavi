@@ -11,7 +11,7 @@ from PIL import Image
 # --- AYARLAR ---
 st.set_page_config(page_title="Fizik Tedavi KDS", page_icon="🏥", layout="wide")
 
-# RESİM YÜKLEME FONKSİYONU (Hata önleyici - Resim yoksa boş geçer)
+# RESİM YÜKLEME FONKSİYONU
 def resim_goster(dosya_adi, genislik=None, altyazi=None):
     if os.path.exists(dosya_adi):
         img = Image.open(dosya_adi)
@@ -33,7 +33,6 @@ except:
 # --- BAŞLIK KISMI ---
 col_logo, col_baslik = st.columns([1, 4])
 with col_logo:
-    # Varsa banner.jpg gösterir, yoksa boş geçer
     resim_goster("banner.jpg", genislik=150) 
 with col_baslik:
     st.title("🏥 Ortopedik Anomali Tespit Sistemi")
@@ -49,7 +48,6 @@ with tab1:
 
     with col_input:
         st.subheader("Hasta Verileri")
-        # Varsa anatomi.jpg gösterir, yoksa boş geçer
         resim_goster("anatomi.jpg", altyazi="Omurga Açıları Referans Görseli")
         
         st.info("Lütfen hastanın radyolojik ölçümlerini giriniz:")
@@ -78,8 +76,6 @@ with tab1:
             probability = model.predict_proba(input_df)
             durum = prediction[0]
             
-            # --- RESİMLER KALDIRILDI, SADECE SONUÇ VE GRAFİK VAR ---
-            
             if durum == 'Normal':
                 st.success(f"✅ SONUÇ: {durum}")
                 st.write("Hastanın omurga yapısı **Sağlıklı** sınıfında değerlendirilmiştir.")
@@ -93,6 +89,8 @@ with tab1:
             probs_df = pd.DataFrame(probability, columns=model.classes_)
             probs_df = probs_df.rename(columns={'Abnormal': 'Anormal', 'Normal': 'Normal'})
             st.bar_chart(probs_df.T)
+
+            # Resimler kaldırıldı, sadece metin ve grafik
 
     st.divider()
     st.subheader("📈 Algoritma Performans Karşılaştırması")
@@ -114,29 +112,37 @@ with tab2:
         df.columns = ['Pelvik_İnsidans', 'Pelvik_Eğim', 'Lumbar_Lordoz_Açısı', 
                       'Sakral_Eğim', 'Pelvik_Yarıçap', 'Spondilolistezis_Derecesi', 'Durum']
         
-        # 1. BÖLÜM
+        # 1. BÖLÜM: GENEL BAKIŞ
         st.subheader("1. Veri Setine Genel Bakış")
         st.write(f"Toplam Kayıt: **{df.shape[0]}** | Özellik Sayısı: **{df.shape[1]}**")
         st.dataframe(df.head(10)) 
+        # --- EKLENEN KISIM ---
+        st.caption("ℹ️ Tabloda veri setinin ilk 10 satırı örnek olarak gösterilmektedir.")
 
-        # 2. BÖLÜM
+        # 2. BÖLÜM: İSTATİSTİKLER
         st.subheader("2. İstatistiksel Özellikler")
         st.write(df.describe())
+        # --- EKLENEN KISIM ---
+        st.caption("ℹ️ **count:** Veri sayısı, **mean:** Ortalama, **std:** Standart sapma, **min-max:** En düşük ve en yüksek değerler.")
 
-        # 3. BÖLÜM
+        # 3. BÖLÜM: HASTA DAĞILIMI
         st.subheader("3. Hasta Dağılımı")
         col_pie1, col_pie2 = st.columns([1, 2])
         dagilim = df['Durum'].value_counts().rename(index={'Abnormal': 'Anormal'})
         with col_pie1: st.dataframe(dagilim)
         with col_pie2: st.bar_chart(dagilim)
+        # --- EKLENEN KISIM ---
+        st.caption("ℹ️ Veri setindeki Anormal (Hasta) ve Normal (Sağlıklı) bireylerin sayısal dağılımı.")
 
-        # 4. BÖLÜM
+        # 4. BÖLÜM: DEĞİŞKEN İLİŞKİLERİ
         st.subheader("4. Değişken İlişkileri (Scatter Plot)")
         ozellikler = df.columns[:-1].tolist()
         c1, c2 = st.columns(2)
         x_val = c1.selectbox("X Ekseni", ozellikler, index=0)
         y_val = c2.selectbox("Y Ekseni", ozellikler, index=5)
         st.scatter_chart(df, x=x_val, y=y_val, color='Durum', size=20)
+        # --- EKLENEN KISIM ---
+        st.caption(f"ℹ️ Grafikte **{x_val}** ile **{y_val}** arasındaki ilişki gösterilmektedir. Renkler hastalık durumunu belirtir.")
 
         st.divider()
 
@@ -186,6 +192,8 @@ with tab2:
             plt.ylabel('Gerçek Durum')
             plt.xlabel('Modelin Tahmini')
             st.pyplot(fig)
+        
+        st.caption("ℹ️ Koyu mavi kutular modelin doğru bildiği hasta sayılarını gösterir.")
         
     else:
         st.error(f"'{dosya_yolu}' dosyası bulunamadı! Lütfen CSV dosyasını klasöre atın.")
